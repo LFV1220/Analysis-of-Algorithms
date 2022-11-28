@@ -1,0 +1,16 @@
+#include <iostream>
+#include <fstream>
+#include <stdio.h>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+int main() {
+    ifstream inputFile; 
+    ofstream outputFile;
+
+    cout << "test" << endl;
+
+    return 0;
+}
