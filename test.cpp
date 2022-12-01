@@ -179,8 +179,8 @@ int main()
 
     queue<Vertex> moveQ;
     // DFS(sizeX, endZ, endX, endY, moveStack, directionStack, maze);
-    // BFS(sizeX, startZ, startX, startY, moveQ, directionStack, maze);
-    BFSBT(sizeX, endX, endY, endZ, startZ, startX, startY, moveQ, directionStack, maze);
+    BFS(sizeX, startZ, startX, startY, moveQ, directionStack, maze);
+    // BFSBT(sizeX, endX, endY, endZ, startZ, startX, startY, moveQ, directionStack, maze);
 
     inputFile.close();
     return 0;
@@ -198,10 +198,7 @@ void BFS(int sizeX, int z, int x, int y, queue<Vertex> moveQ, stack<int> directi
     // Mark the passed vertex into DFS function as visited and push onto stack
 
     // trying to backtrack but not working
-    if (!maze[z][x][y].visited)
-    {
-        moveQ.push(maze[z][x][y]);
-    }
+    moveQ.push(maze[z][x][y]);
 
     maze[z][x][y].visited = true;
 
@@ -218,13 +215,6 @@ void BFS(int sizeX, int z, int x, int y, queue<Vertex> moveQ, stack<int> directi
             moveQ.pop();
 
             int currentCellNumber = moveQ.front().cellNumber;
-
-            // trying to backtrack but not working
-            if (!maze[z][x][y].visited)
-            {
-                // something else here not that below
-                // moveQ.push(maze[z][x][y]);
-            }
 
             if (currentCellNumber == prevCellNumber - 1)
             {
@@ -297,7 +287,7 @@ void BFSBT(int sizeX, int endX, int endY, int endZ, int z, int x, int y, queue<V
 
         // this part might be why its not working
         node = path.back();
-        if (node.x == endX && node.y == endY && node.z == endZ)
+        if (node.end)
         {
             // return path
             cout << "path found" << endl;
