@@ -7,6 +7,8 @@
 
 using namespace std;
 
+vector<string> directions = {"N", "E", "S", "W", "U", "D"};
+
 class Graph
 {
 public:
@@ -18,8 +20,8 @@ public:
     vector<Graph> graph;
 };
 
-void bfs(int constantRowSize, int levels, int rows, int cols, queue<Graph> moves, vector<vector<vector<Graph>>> graph);
-void BFSBT(int constantRowSize, int endX, int endY, int endZ, int l, int r, int c, queue<Graph> moves, vector<vector<vector<Graph>>> graph);
+void bfs(int constRowSize, int constColSize, int levels, int rows, int cols, queue<Graph> moves, vector<vector<vector<Graph>>> graph, vector<string> *soln);
+// void BFSBT(int constantRowSize, int endX, int endY, int endZ, int l, int r, int c, queue<Graph> moves, vector<vector<vector<Graph>>> graph); // not working :(
 
 int main()
 {
@@ -28,9 +30,13 @@ int main()
     string temp;
     int levels, rows, cols;
     vector<int> start, goal;
+    queue<Graph> moves;
+    vector<string> soln;
     int count = 0;
 
     inputFile.open("input.txt", ios::in);
+    outputFile.open("output.txt");
+
     if (inputFile.is_open())
     {
         // For levels, rows, and columns
@@ -52,6 +58,7 @@ int main()
         vector<vector<vector<Graph>>> graph(levels, vector<vector<Graph>>(rows, vector<Graph>(cols)));
 
         // Reading from input file onto graph
+        // Traverse through levels
         for (int i = 0; i < levels; i++)
         {
             // Traverse through rows
@@ -64,26 +71,30 @@ int main()
                     graph[i][j][k].rows = j;
                     graph[i][j][k].columns = k;
                     graph[i][j][k].coordCount = count;
-                    
+
                     inputFile >> graph[i][j][k].directionInfo;
-                    // cout << graph[i][j][k].coordCount << " " << graph[i][j][k].directionInfo << endl;
                     graph[i][j][k].start = graph[i][j][k].goal = graph[i][j][k].visited = false;
                     count++;
                 }
             }
         }
 
+        // Marking the start and goal as visited
         graph[start[0]][start[1]][start[2]].start = graph[goal[0]][goal[1]][goal[2]].goal = true;
-        int direction;
 
+        // Traverse through levels
         for (int i = 0; i < levels; i++)
         {
+            // Traverse through rows
             for (int j = 0; j < rows; j++)
             {
+                // Traverse through columns
                 for (int k = 0; k < cols; k++)
                 {
+                    // Traverse each bit of 6 bit direction information
                     for (int l = 0; l < 6; l++)
                     {
+                        // If 1, push corresponding direction into adjacency list
                         if (graph[i][j][k].directionInfo[l] == '1')
                         {
                             // North direction
@@ -122,93 +133,107 @@ int main()
             }
         }
 
-        queue<Graph> moves;
-        // call recursive function (pathbfs)
-        bfs(rows, start[0],start[1],start[2], moves, graph);
+        bfs(rows, cols, start[0], start[1], start[2], moves, graph, &soln);
         // BFSBT(rows, goal[0], goal[1], goal[2], start[0],start[1],start[2], moves, graph);
 
+        // Output
+        for (int i = 0; i < soln.size(); i++)
+        {
+            outputFile << soln[i] << " ";
+        }
+
         inputFile.close();
+        outputFile.close();
+
         return 0;
     }
 }
 
-void bfs(int constantRowSize, int l, int r, int c, queue<Graph> moves, vector<vector<vector<Graph>>> graph)
+// Recursive breath-first search algorithm that returns all paths (from start coordinates to goal coordinates)
+void bfs(int constRowSize, int constColSize, int l, int r, int c, queue<Graph> moves, vector<vector<vector<Graph>>> graph, vector<string> *soln)
 {
     int levels = l;
     int rows = r;
     int cols = c;
     Graph node;
-    // cout << graph[l][r][c].levels << " ";
-    // cout << graph[l][r][c].rows << " ";
-    // cout << graph[l][r][c].columns << endl;
 
+    if (graph[l][r][c].start)
+    {
+        soln->push_back("START");
+        cout << "START ";
+    }
+
+    // Set the graph at these coordinates as visited and push to queue
     graph[l][r][c].visited = true;
-
     moves.push(graph[l][r][c]);
 
+    // If we are at the goal coordinates
     if (graph[l][r][c].goal)
     {
+        // Loops through queue until empty
         while (!moves.empty())
         {
-            // node = moves.back();
-            // if(node.goal) {
-            //     cout << "path found" << endl;
-            //     return;
-            // }
-
             int coordCount1 = moves.front().coordCount;
             moves.pop();
             int coordCount2 = moves.front().coordCount;
 
             if (coordCount2 == coordCount1 - 1)
             {
+                soln->push_back(directions[3]);
                 cout << "W ";
             }
             else if (coordCount2 == coordCount1 + 1)
             {
+                soln->push_back(directions[1]);
                 cout << "E ";
             }
-            else if (coordCount2 == coordCount1 - constantRowSize)
+            else if (coordCount2 == coordCount1 - constRowSize)
             {
+                soln->push_back(directions[0]);
                 cout << "N ";
             }
-            else if (coordCount2 == coordCount1 + constantRowSize)
+            else if (coordCount2 == coordCount1 + constRowSize)
             {
+                soln->push_back(directions[2]);
                 cout << "S ";
             }
-            else if (coordCount2 == coordCount1 + (constantRowSize * constantRowSize))
+            else if (coordCount2 == coordCount1 + (constRowSize * constColSize))
             {
+                soln->push_back(directions[4]);
                 cout << "U ";
             }
-            else if (coordCount2 == coordCount1 - (constantRowSize * constantRowSize))
+            else if (coordCount2 == coordCount1 - (constRowSize * constColSize))
             {
+                soln->push_back(directions[5]);
                 cout << "D ";
             }
-
-            // stop here but not stopping completely
-
         }
     }
-
-    if(graph[l][r][c].goal) {
-        cout << "END" << endl;
-        return;
-    }
-
-    // fix here (still going after END)
-    for (int i = 0; i < graph[l][r][c].graph.size(); i++)
+    else
     {
-        levels = graph[l][r][c].graph[i].levels;
-        rows = graph[l][r][c].graph[i].rows;
-        cols = graph[l][r][c].graph[i].columns;
-
-        if (!graph[levels][rows][cols].visited)
+        // Looping through adjacent vertices
+        for (int i = 0; i < graph[l][r][c].graph.size(); i++)
         {
-            bfs(constantRowSize, levels, rows, cols, moves, graph);
+            // Changing coordinates to adjacent vertex
+            levels = graph[l][r][c].graph[i].levels;
+            rows = graph[l][r][c].graph[i].rows;
+            cols = graph[l][r][c].graph[i].columns;
+
+            // If adjacent vertex isn't visited, visit them
+            if (!graph[levels][rows][cols].visited)
+            {
+                bfs(constRowSize, constColSize, levels, rows, cols, moves, graph, soln);
+            }
         }
+    }
+
+    // Print "END" after every path
+    if (graph[l][r][c].goal)
+    {
+        soln->push_back("END\n ");
+        cout << "END" << endl;
     }
 }
-
 
 // Trying to implement BFS with backtracking, not working :(
 // void BFSBT(int constantRowSize, int endX, int endY, int endZ, int l, int r, int c, queue<Graph> moves, vector<vector<vector<Graph>>> graph)
@@ -218,11 +243,7 @@ void bfs(int constantRowSize, int l, int r, int c, queue<Graph> moves, vector<ve
 //     int cols = c;
 //     queue<Graph> path;
 //     Graph node;
-//     // cout << maze[z][x][y].z << " ";
-//     // cout << maze[z][x][y].x << " ";
-//     // cout << maze[z][x][y].y << endl;
 
-//     // Mark the passed vertex into DFS function as visited and push onto stack
 //     graph[l][r][c].visited = true;
 //     moves.push(graph[l][r][c]);
 
@@ -240,7 +261,6 @@ void bfs(int constantRowSize, int l, int r, int c, queue<Graph> moves, vector<ve
 //             cout << "path found" << endl;
 //             return;
 //         }
-
 
 //         for (int i = 0; i < graph[l][r][c].graph.size(); i++)
 //         {
