@@ -1,37 +1,133 @@
-#include <iostream>
-#include <fstream>
-#include <stdio.h>
-#include <queue>
-#include <string>
-#include <vector>
-
+#include <bits/stdc++.h>
 using namespace std;
 
-vector<string> directions = {"N", "E", "S", "W", "U", "D"};
+int levels, rows, cols;
+vector<int> start, goal;
 
-class Graph
+void reader(ifstream &inputFile, vector<int> &start, vector<int> &goal)
 {
-public:
-    int levels, rows, columns, coordCount;
-    bool start, goal, visited;
-    string directionInfo;
+    string temp;
 
-    // Adjacency list based gaph
-    vector<Graph> graph;
-};
+    // For levels, rows, and columns
+    getline(inputFile, temp);
+    sscanf(temp.c_str(), "%d %d %d", &levels, &rows, &cols);
 
-void bfs(int constRowSize, int constColSize, int levels, int rows, int cols, queue<Graph> moves, vector<vector<vector<Graph>>> graph, vector<string> *soln);
-// void BFSBT(int constantRowSize, int endX, int endY, int endZ, int l, int r, int c, queue<Graph> moves, vector<vector<vector<Graph>>> graph); // not working :(
+    // For start coordinates
+    int x, y, z;
+    getline(inputFile, temp);
+    sscanf(temp.c_str(), "%d %d %d", &x, &y, &z);
+    start = {x, y, z};
+
+    // For goal coordinates
+    getline(inputFile, temp);
+    sscanf(temp.c_str(), "%d %d %d", &x, &y, &z);
+    goal = {x, y, z};
+}
+
+void initialize(ifstream &inputFile, vector<vector<vector<string>>> &graph, vector<vector<vector<bool>>> &visited)
+{
+    for (int i = 0; i < levels; i++)
+    {
+        for (int j = 0; j < rows; j++)
+        {
+            for (int k = 0; k < cols; k++)
+            {
+                // Adding direction info into matrix and initializing adjacency matrix
+                inputFile >> graph[i][j][k];
+                visited[i][j][k] = false;
+            }
+        }
+    }
+}
+
+int dfs(int l, int r, int c, deque<string> &directions, vector<vector<vector<string>>> graph, vector<vector<vector<bool>>> &visited)
+{
+
+    visited[l][r][c] = true;
+
+    // Checks if we are the goal coordinates and if so returns
+    if (visited[goal[0]][goal[1]][goal[2]])
+    {
+        return 1;
+    }
+
+    string directionInfo = graph[l][r][c];
+    int result = 0;
+
+    // Goes through direction info (6 bit string)
+    for (int i = 0; i < 6; i++)
+    {
+        if (directionInfo[i] == '1')
+        {
+            // Checks index of directionInfo for direction
+            switch (i)
+            {
+            // When index is 1 call dfs recursively with that specific direction
+            case (0):
+                directions.push_back("N");
+                if (!visited[l][r - 1][c])
+                {
+                    result = dfs(l, r - 1, c, directions, graph, visited);
+                }
+
+                break;
+            case (1):
+                directions.push_back("E");
+                if (!visited[l][r][c + 1])
+                {
+                    result = dfs(l, r, c + 1, directions, graph, visited);
+                }
+
+                break;
+            case (2):
+                directions.push_back("S");
+                if (!visited[l][r + 1][c])
+                {
+                    result = dfs(l, r + 1, c, directions, graph, visited);
+                }
+                break;
+            case (3):
+                directions.push_back("W");
+                if (!visited[l][r][c - 1])
+                {
+                    result = dfs(l, r, c - 1, directions, graph, visited);
+                }
+                break;
+            case (4):
+                directions.push_back("U");
+                if (!visited[l + 1][r][c])
+                {
+                    result = dfs(l + 1, r, c, directions, graph, visited);
+                }
+                break;
+            case (5):
+                directions.push_back("D");
+                if (!visited[l - 1][r][c])
+                {
+                    result = dfs(l - 1, r, c, directions, graph, visited);
+                }
+                break;
+            }
+
+            if (result)
+            {
+                return 1;
+            }
+            else
+            {
+                directions.pop_back();
+            }
+        }
+    }
+    return 0;
+}
 
 int main()
 {
     ifstream inputFile;
     ofstream outputFile;
     string temp;
-    int levels, rows, cols;
-    vector<int> start, goal;
-    queue<Graph> moves;
-    vector<string> soln;
+    deque<string> directions;
     int count = 0;
 
     inputFile.open("input.txt", ios::in);
@@ -39,245 +135,26 @@ int main()
 
     if (inputFile.is_open())
     {
-        // For levels, rows, and columns
-        getline(inputFile, temp);
-        sscanf(temp.c_str(), "%d %d %d", &levels, &rows, &cols);
+        reader(inputFile, start, goal);
 
-        // For start coordinates
-        int x, y, z;
-        getline(inputFile, temp);
-        sscanf(temp.c_str(), "%d %d %d", &x, &y, &z);
-        start = {x, y, z};
+        // Initialize graph and visited vector matrices
+        vector<vector<vector<string>>> graph(levels, vector<vector<string>>(rows, vector<string>(cols)));
+        vector<vector<vector<bool>>> visited(levels, vector<vector<bool>>(rows, vector<bool>(cols)));
+        initialize(inputFile, graph, visited);
 
-        // For goal coordinates
-        getline(inputFile, temp);
-        sscanf(temp.c_str(), "%d %d %d", &x, &y, &z);
-        goal = {x, y, z};
+        // DFS with backtracking
+        dfs(start[0], start[1], start[2], directions, graph, visited);
 
-        // Graph matrix
-        vector<vector<vector<Graph>>> graph(levels, vector<vector<Graph>>(rows, vector<Graph>(cols)));
-
-        // Reading from input file onto graph
-        // Traverse through levels
-        for (int i = 0; i < levels; i++)
+        // Iterate through the directions and output it
+        while (!directions.empty())
         {
-            // Traverse through rows
-            for (int j = 0; j < rows; j++)
-            {
-                // Traverse through columns
-                for (int k = 0; k < cols; k++)
-                {
-                    graph[i][j][k].levels = i;
-                    graph[i][j][k].rows = j;
-                    graph[i][j][k].columns = k;
-                    graph[i][j][k].coordCount = count;
-
-                    inputFile >> graph[i][j][k].directionInfo;
-                    graph[i][j][k].start = graph[i][j][k].goal = graph[i][j][k].visited = false;
-                    count++;
-                }
-            }
+            outputFile << directions.front() << " ";
+            directions.pop_front();
         }
-
-        // Marking the start and goal as visited
-        graph[start[0]][start[1]][start[2]].start = graph[goal[0]][goal[1]][goal[2]].goal = true;
-
-        // Traverse through levels
-        for (int i = 0; i < levels; i++)
-        {
-            // Traverse through rows
-            for (int j = 0; j < rows; j++)
-            {
-                // Traverse through columns
-                for (int k = 0; k < cols; k++)
-                {
-                    // Traverse each bit of 6 bit direction information
-                    for (int l = 0; l < 6; l++)
-                    {
-                        // If 1, push corresponding direction into adjacency list
-                        if (graph[i][j][k].directionInfo[l] == '1')
-                        {
-                            // North direction
-                            if (l == 0)
-                            {
-                                graph[i][j][k].graph.push_back(graph[i][j - 1][k]);
-                            }
-                            // East direction
-                            else if (l == 1)
-                            {
-                                graph[i][j][k].graph.push_back(graph[i][j][k + 1]);
-                            }
-                            // South direction
-                            else if (l == 2)
-                            {
-                                graph[i][j][k].graph.push_back(graph[i][j + 1][k]);
-                            }
-                            // West direction
-                            else if (l == 3)
-                            {
-                                graph[i][j][k].graph.push_back(graph[i][j][k - 1]);
-                            }
-                            // Up
-                            else if (l == 4)
-                            {
-                                graph[i][j][k].graph.push_back(graph[i + 1][j][k]);
-                            }
-                            // Down
-                            else if (l == 5)
-                            {
-                                graph[i][j][k].graph.push_back(graph[i - 1][j][k]);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        bfs(rows, cols, start[0], start[1], start[2], moves, graph, &soln);
-        // BFSBT(rows, goal[0], goal[1], goal[2], start[0],start[1],start[2], moves, graph);
-
-        // Output
-        for (int i = 0; i < soln.size(); i++)
-        {
-            outputFile << soln[i] << " ";
-        }
-
-        inputFile.close();
-        outputFile.close();
-
-        return 0;
     }
+
+    inputFile.close();
+    outputFile.close();
+
+    return 0;
 }
-
-// Recursive breath-first search algorithm that returns all paths (from start coordinates to goal coordinates)
-void bfs(int constRowSize, int constColSize, int l, int r, int c, queue<Graph> moves, vector<vector<vector<Graph>>> graph, vector<string> *soln)
-{
-    int levels = l;
-    int rows = r;
-    int cols = c;
-    Graph node;
-
-    if (graph[l][r][c].start)
-    {
-        soln->push_back("START");
-        cout << "START ";
-    }
-
-    // Set the graph at these coordinates as visited and push to queue
-    graph[l][r][c].visited = true;
-    moves.push(graph[l][r][c]);
-
-    // If we are at the goal coordinates
-    if (graph[l][r][c].goal)
-    {
-        // Loops through queue until empty
-        while (!moves.empty())
-        {
-            int coordCount1 = moves.front().coordCount;
-            moves.pop();
-            int coordCount2 = moves.front().coordCount;
-
-            if (coordCount2 == coordCount1 - 1)
-            {
-                soln->push_back(directions[3]);
-                cout << "W ";
-            }
-            else if (coordCount2 == coordCount1 + 1)
-            {
-                soln->push_back(directions[1]);
-                cout << "E ";
-            }
-            else if (coordCount2 == coordCount1 - constRowSize)
-            {
-                soln->push_back(directions[0]);
-                cout << "N ";
-            }
-            else if (coordCount2 == coordCount1 + constRowSize)
-            {
-                soln->push_back(directions[2]);
-                cout << "S ";
-            }
-            else if (coordCount2 == coordCount1 + (constRowSize * constColSize))
-            {
-                soln->push_back(directions[4]);
-                cout << "U ";
-            }
-            else if (coordCount2 == coordCount1 - (constRowSize * constColSize))
-            {
-                soln->push_back(directions[5]);
-                cout << "D ";
-            }
-        }
-    }
-    else
-    {
-        // Looping through adjacent vertices
-        for (int i = 0; i < graph[l][r][c].graph.size(); i++)
-        {
-            // Changing coordinates to adjacent vertex
-            levels = graph[l][r][c].graph[i].levels;
-            rows = graph[l][r][c].graph[i].rows;
-            cols = graph[l][r][c].graph[i].columns;
-
-            // If adjacent vertex isn't visited, visit them
-            if (!graph[levels][rows][cols].visited)
-            {
-                bfs(constRowSize, constColSize, levels, rows, cols, moves, graph, soln);
-            }
-        }
-    }
-
-    // Print "END" after every path
-    if (graph[l][r][c].goal)
-    {
-        soln->push_back("END\n ");
-        cout << "END" << endl;
-    }
-}
-
-// Trying to implement BFS with backtracking, not working :(
-// void BFSBT(int constantRowSize, int endX, int endY, int endZ, int l, int r, int c, queue<Graph> moves, vector<vector<vector<Graph>>> graph)
-// {
-//     int levels = l;
-//     int rows = r;
-//     int cols = c;
-//     queue<Graph> path;
-//     Graph node;
-
-//     graph[l][r][c].visited = true;
-//     moves.push(graph[l][r][c]);
-
-//     while (!moves.empty())
-//     {
-//         cout << "while !empty loop start" << endl;
-//         path.push(moves.front());
-//         moves.pop();
-
-//         // this part might be why its not working
-//         node = path.back();
-//         if (node.goal)
-//         {
-//             // return path
-//             cout << "path found" << endl;
-//             return;
-//         }
-
-//         for (int i = 0; i < graph[l][r][c].graph.size(); i++)
-//         {
-//             cout << "for loop for adjacent vertex runs" << endl;
-//             levels = graph[l][r][c].graph[i].levels;
-//             rows = graph[l][r][c].graph[i].rows;
-//             cols = graph[l][r][c].graph[i].columns;
-
-//             queue<Graph> new_path = path;
-//             new_path.push(graph[l][r][c].graph[i]);
-//             if (!graph[l][r][c].visited)
-//             {
-//                 moves.push(new_path.back());
-//             }
-
-//             cout << "recursion call" << endl;
-//             BFSBT(constantRowSize, endX, endY, endZ, levels, rows, cols, moves, graph);
-//         }
-//     }
-// }
